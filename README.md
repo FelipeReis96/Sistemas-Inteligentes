@@ -1,4 +1,4 @@
-# Sistemas-Inteligantes
+# Sistemas-Inteligentes
 Repositório que armazena códigos e anotações voltadas a matéria de sistemas inteligentes
 
 ## Orientações sobre o artigo

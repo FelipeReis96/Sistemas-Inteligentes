@@ -17,6 +17,27 @@ def gerar_vizinha_por_troca(rota, gerador):
     return nova_rota
 
 
+def gerar_vizinha_por_inversao(rota, gerador):
+    """Cria uma vizinha invertendo um intervalo da rota."""
+    while True:
+        inicio, fim = sorted(gerador.sample(range(len(rota)), 2))
+        if inicio != 0 or fim != len(rota) - 1:
+            break
+
+    nova_rota = rota.copy()
+    nova_rota[inicio : fim + 1] = reversed(nova_rota[inicio : fim + 1])
+    return nova_rota
+
+
+def gerar_vizinha(rota, gerador, vizinhanca):
+    """Aplica o operador de vizinhança escolhido para a execução."""
+    if vizinhanca == "troca":
+        return gerar_vizinha_por_troca(rota, gerador)
+    if vizinhanca == "inversao":
+        return gerar_vizinha_por_inversao(rota, gerador)
+    raise ValueError("A vizinhança informada não existe.")
+
+
 def deve_aceitar(diferenca, temperatura, gerador):
     """Aceita melhorias sempre e pioras conforme a regra de Metropolis."""
     if diferenca <= 0:
@@ -39,6 +60,7 @@ def executar_tempera_simulada(
     taxa_resfriamento,
     iteracoes,
     semente,
+    vizinhanca="troca",
 ):
     """Executa a busca e retorna as rotas e medidas importantes da execução."""
     
@@ -56,7 +78,7 @@ def executar_tempera_simulada(
     quantidade_pioras_aceitas = 0
 
     for _ in range(iteracoes):
-        rota_vizinha = gerar_vizinha_por_troca(rota_atual, gerador)
+        rota_vizinha = gerar_vizinha(rota_atual, gerador, vizinhanca)
         custo_vizinho = calcular_custo_rota(rota_vizinha, distancias)
         diferenca = custo_vizinho - custo_atual
 

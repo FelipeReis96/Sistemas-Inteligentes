@@ -1,17 +1,23 @@
-"""Demonstração da Têmpera Simulada e do AG no Caixeiro Viajante."""
+"""Demonstração da Têmpera Simulada e do Algoritmo Genético no Caixeiro Viajante."""
 
 import argparse
 
 from algoritmo_genetico import executar_algoritmo_genetico, gerar_populacao
-from problema import calcular_custo_rota, calcular_distancias, gerar_cidades, gerar_rota_aleatoria
+from problema import (
+    calcular_custo_rota,
+    calcular_distancias,
+    gerar_cidades,
+    gerar_rota_aleatoria,
+    gerar_rota_vizinho_mais_proximo,
+)
 from tempera_simulada import executar_tempera_simulada
 
 
-QUANTIDADE_CIDADES = 10
+QUANTIDADE_CIDADES = 235
 
-SEMENTE_INSTANCIA = 42
-SEMENTE_ROTA = 7
-SEMENTE_BUSCA = 13
+SEMENTE_INSTANCIA = 13
+SEMENTE_ROTA = 8
+SEMENTE_BUSCA = 12
 
 TEMPERATURA_INICIAL = 100.0
 TAXA_RESFRIAMENTO = 0.995
@@ -41,10 +47,22 @@ def main():
     )
     parser.add_argument("--instance-seed", type=int, default=SEMENTE_INSTANCIA)
     parser.add_argument("--route-seed", type=int, default=SEMENTE_ROTA)
+    parser.add_argument(
+        "--initial-route",
+        choices=["aleatoria", "vizinho_mais_proximo"],
+        default="vizinho_mais_proximo",
+        help="Construção da rota inicial da Têmpera (padrão: vizinho_mais_proximo).",
+    )
     parser.add_argument("--search-seed", type=int, default=SEMENTE_BUSCA)
     parser.add_argument("--temperature", type=float, default=TEMPERATURA_INICIAL)
     parser.add_argument("--cooling-rate", type=float, default=TAXA_RESFRIAMENTO)
     parser.add_argument("--iterations", type=int, default=ITERACOES)
+    parser.add_argument(
+        "--neighborhood",
+        choices=["troca", "inversao"],
+        default="inversao",
+        help="Vizinhança da Têmpera (padrão: inversao).",
+    )
     parser.add_argument("--population-size", type=int, default=TAMANHO_POPULACAO)
     parser.add_argument("--population-seed", type=int, default=SEMENTE_POPULACAO)
     parser.add_argument("--crossover-rate", type=float, default=TAXA_CRUZAMENTO)
@@ -59,7 +77,10 @@ def main():
         resultados = []
 
         if args.algorithm in ["tempera", "ambos"]:
-            rota = gerar_rota_aleatoria(cidades, semente=args.route_seed)
+            if args.initial_route == "aleatoria":
+                rota = gerar_rota_aleatoria(cidades, semente=args.route_seed)
+            else:
+                rota = gerar_rota_vizinho_mais_proximo(distancias)
             custo_inicial = calcular_custo_rota(rota, distancias)
             resultado = executar_tempera_simulada(
                 rota,
@@ -68,12 +89,15 @@ def main():
                 taxa_resfriamento=args.cooling_rate,
                 iteracoes=args.iterations,
                 semente=args.search_seed,
+                vizinhanca=args.neighborhood,
             )
             resultados.append(("Têmpera Simulada", custo_inicial, resultado))
 
         if args.algorithm in ["ag", "ambos"]:
             populacao = gerar_populacao(
-                cidades, args.population_size, semente=args.population_seed
+                cidades,
+                args.population_size,
+                semente=args.population_seed,
             )
             resultado = executar_algoritmo_genetico(
                 populacao,

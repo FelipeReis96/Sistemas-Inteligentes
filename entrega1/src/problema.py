@@ -89,3 +89,28 @@ def gerar_rota_aleatoria(cidades, semente):
     gerador = random.Random(semente)
     gerador.shuffle(rota)
     return rota
+
+
+def gerar_rota_vizinho_mais_proximo(distancias, cidade_inicial=0):
+    """Constrói uma rota escolhendo sempre a cidade não visitada mais próxima."""
+    quantidade_cidades = len(distancias)
+    validar_quantidade_cidades(quantidade_cidades)
+    if type(cidade_inicial) is not int:
+        raise ValueError("A cidade inicial deve ser representada por um inteiro.")
+    if cidade_inicial < 0 or cidade_inicial >= quantidade_cidades:
+        raise ValueError("A cidade inicial deve pertencer à instância.")
+
+    rota = [cidade_inicial]
+    nao_visitadas = list(range(quantidade_cidades))
+    nao_visitadas.remove(cidade_inicial)
+
+    while nao_visitadas:
+        cidade_atual = rota[-1]
+        proxima = min(
+            nao_visitadas,
+            key=lambda cidade: (distancias[cidade_atual][cidade], cidade),
+        )
+        rota.append(proxima)
+        nao_visitadas.remove(proxima)
+
+    return rota

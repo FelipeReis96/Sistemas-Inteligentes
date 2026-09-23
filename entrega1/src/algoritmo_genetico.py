@@ -24,12 +24,24 @@ def avaliar_populacao(populacao, distancias):
     return custos
 
 
-def calcular_aptidoes(custos):
-    """Transforma a minimização do custo em maximização da aptidão."""
-    aptidoes = []
-    for custo in custos:
-        # O +1 também permite avaliar rotas com custo zero.
-        aptidoes.append(1.0 / (1.0 + custo))
+def calcular_aptidoes_por_ranking(custos):
+    """Atribui pesos de 1,5 a 0,5 pela posição, igualando empates."""
+    quantidade = len(custos)
+    if quantidade == 1:
+        return [1.0]
+
+    indices = sorted(range(quantidade), key=lambda indice: custos[indice])
+    aptidoes = [0.0] * quantidade
+    inicio = 0
+    while inicio < quantidade:
+        fim = inicio + 1
+        while fim < quantidade and custos[indices[fim]] == custos[indices[inicio]]:
+            fim += 1
+        posicao_media = (inicio + fim - 1) / 2
+        aptidao = 1.5 - posicao_media / (quantidade - 1)
+        for posicao in range(inicio, fim):
+            aptidoes[indices[posicao]] = aptidao
+        inicio = fim
     return aptidoes
 
 
@@ -72,17 +84,19 @@ def cruzar_pmx(pai_a, pai_b, gerador):
     return filho_a, filho_b
 
 
-def mutar_por_troca(rota, taxa_mutacao, gerador):
-    """Para cada posição, sorteia se ela será trocada com outra posição."""
+def mutar_por_inversao(rota, taxa_mutacao, gerador):
+    """Para cada posição sorteada, inverte o trecho até outra posição."""
     nova_rota = rota.copy()
     for posicao in range(len(nova_rota)):
         if gerador.random() < taxa_mutacao:
-            outra = gerador.randrange(len(nova_rota) - 1)
-            if outra >= posicao:
-                outra += 1
-            nova_rota[posicao], nova_rota[outra] = (
-                nova_rota[outra], nova_rota[posicao]
-            )
+            while True:
+                outra = gerador.randrange(len(nova_rota) - 1)
+                if outra >= posicao:
+                    outra += 1
+                if {posicao, outra} != {0, len(nova_rota) - 1}:
+                    break
+            inicio, fim = sorted([posicao, outra])
+            nova_rota[inicio : fim + 1] = reversed(nova_rota[inicio : fim + 1])
     return nova_rota
 
 
@@ -101,7 +115,7 @@ def gerar_descendentes(populacao, aptidoes, taxa_cruzamento, taxa_mutacao, gerad
         for filho in filhos:
             if len(descendentes) == len(populacao):
                 break
-            descendentes.append(mutar_por_troca(filho, taxa_mutacao, gerador))
+            descendentes.append(mutar_por_inversao(filho, taxa_mutacao, gerador))
     return descendentes
 
 
@@ -135,14 +149,14 @@ def executar_algoritmo_genetico(
     historico_avaliacoes = [quantidade_avaliacoes]
 
     for _ in range(geracoes):
-        aptidoes = calcular_aptidoes(custos)
+        aptidoes = calcular_aptidoes_por_ranking(custos)
         filhos = gerar_descendentes(
             populacao, aptidoes, taxa_cruzamento, taxa_mutacao, gerador
         )
         custos_filhos = avaliar_populacao(filhos, distancias)
         quantidade_avaliacoes += len(filhos)
 
-        # Conforme os slides: melhores entre pais e filhos formam a geração.
+        # Conforme os slides: os melhores entre pais e filhos sobrevivem.
         populacao, custos = selecionar_sobreviventes(
             populacao + filhos, custos + custos_filhos, tamanho
         )
